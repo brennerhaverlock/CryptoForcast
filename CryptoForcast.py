@@ -64,8 +64,8 @@ high_prices = df.loc[:,'High'].as_matrix()
 low_prices = df.loc[:,'Low'].as_matrix()
 mid_prices = (high_prices+low_prices)/2.0
 #split 
-train_data = mid_prices[:1580]
-test_data = mid_prices[1580:]
+train_data = mid_prices[:791]
+test_data = mid_prices[791:]
 
 ##Now we Scale the data to be between 0 and 1 
 scaler = MinMaxScaler()
@@ -73,8 +73,8 @@ train_data = train_data.reshape(-1,1)
 test_data = test_data.reshape(-1,1)
 
 #Train the sclaer with training data and smooth data
-smooth_window_size = 500
-for di in range(0, 1583, smooth_window_size):
+smooth_window_size = 130
+for di in range(0, 790, smooth_window_size):
     scaler.fit(train_data[di:di+smooth_window_size,:])
     train_data[di:di+smooth_window_size,:] = scaler.transform(train_data[di:di+smooth_window_size,:])
     
@@ -111,6 +111,9 @@ for pred_ix in range(window_size,N):
         date = dt.datetime.strptime(k, '%Y-%m-%d').date() + dt.timedelta(days = 1)
     else:
         date = df.loc[pred_ix,'Date']
+        
+    std_avg_predictions.append(np.mean(train_data[pred_ix-window_size:pred_ix]))
+    mse_errors.append((std_avg_predictions[-1]-train_data[pred_ix]) **2)
 
 
 
