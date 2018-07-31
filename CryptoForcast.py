@@ -114,6 +114,16 @@ for pred_ix in range(window_size,N):
         
     std_avg_predictions.append(np.mean(train_data[pred_ix-window_size:pred_ix]))
     mse_errors.append((std_avg_predictions[-1]-train_data[pred_ix]) **2)
+    std_avg_x.append(date)
+print('MSE error for standard AVG: %.5f'%(0.5*np.mean(mse_errors)))
+
+plt.figure(figsize = (18,9))
+plt.plot(range(df.shape[0]), all_mid_data, color = 'orange', label = 'True')
+plt.plot(range(window_size,N), std_avg_predictions, color = 'b', label = "Prediction")
+plt.xlabel('Date')
+plt.ylabel('Mid Price')
+plt.legend(fontsize = 18)
+plt.show()
 
 
 
