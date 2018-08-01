@@ -125,6 +125,41 @@ plt.ylabel('Mid Price')
 plt.legend(fontsize = 18)
 plt.show()
 
+#Exponential Moving Average 
+
+window_size = 100 
+
+N = train_data.size
+
+run_avg_predictions = []
+run_avg_x = []
+mse_errors = []
+
+running_mean = 0.0
+run_avg_predictions.append(running_mean)
+
+decay = 0.5
+
+for pred_ixx in range(1,N):
+    
+    running_mean = running_mean*decay + (1.0 - decay) * train_data[pred_ixx - 1]
+    run_avg_predictions.append(running_mean)
+    mse_errors.append((run_avg_predictions[-1] - train_data[pred_ixx])**2)
+    run_avg_x.append(date)
+    
+print('MSE error for EMA average %.5f'%(0.5*np.mean(mse_errors)))
+
+plt.figure(figsize = (18,9))
+plt.plot(range(df.shape[0]), all_mid_data, color = 'b', label = "True")
+plt.plot(range(0,N), run_avg_predictions, color = 'orange', label = 'Prediction')
+plt.xlabel('Date')
+plt.ylabel('Mid Price')
+plt.legend(fontsize = 18)
+plt.show()
+
+
+
+
 
 
 
