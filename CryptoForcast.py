@@ -231,7 +231,7 @@ for ui in range(num_unrolling):
 lstm_cells = [
         
         tf.contrib.rnn.LSTMCell(num_units=num_node[ix],
-                                is_tuple = True,
+                                state_is_tuple= True,
                                 initializer = tf.contrib.layers.xavier_initializer()
                                 )
         for ix in range(n_layers)]
@@ -243,6 +243,17 @@ multi_cell = tf.contrib.rnn.MultiRNNCell(lstm_cells)
 #Linear regression layer w and b 
 r_0 = tf.get_variable('w', shape=[num_node[-1], 1], initializer= tf.contrib.layers.xavier_initializer())
 r_1 = tf.get_variable('b', initializer= tf.random_uniform([1], -0.1, 0.1))
+
+#creating cell state and hidden state variables to keep the state of LSTM in check
+
+c_state, h_state = [], []
+initial_state = []
+for ix in range(n_layers):
+    c_state.append(tf.Variable(tf.zeros([batch_size, num_node[ix]]), trainable= False))
+    h_state.append(tf.Variable(tf.zeros([batch_size, num_node[ix]]), trainable= False))
+    initial_state.append(tf.contrib.rnn.LSTMStateTuple(c_state[ix], h_state[ix]))
+    
+    
             
         
 
