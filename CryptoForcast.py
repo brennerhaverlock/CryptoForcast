@@ -64,8 +64,8 @@ high_prices = df.loc[:,'High'].as_matrix()
 low_prices = df.loc[:,'Low'].as_matrix()
 mid_prices = (high_prices+low_prices)/2.0
 #split 
-train_data = mid_prices[:791]
-test_data = mid_prices[791:]
+from sklearn.model_selection import train_test_split
+train_data, test_data = train_test_split(mid_prices, test_size=0.2)
 
 ##Now we Scale the data to be between 0 and 1 
 scaler = MinMaxScaler()
@@ -73,16 +73,16 @@ train_data = train_data.reshape(-1,1)
 test_data = test_data.reshape(-1,1)
 
 #Train the sclaer with training data and smooth data
-smooth_window_size = 130
-for di in range(0, 790, smooth_window_size):
+smooth_window_size = 300
+for di in range(0, 1200, smooth_window_size):
     scaler.fit(train_data[di:di+smooth_window_size,:])
     train_data[di:di+smooth_window_size,:] = scaler.transform(train_data[di:di+smooth_window_size,:])
     
 #Normalize the last of the remaining data
 scaler.fit(train_data[di+smooth_window_size:,:])
-train_data[di+smooth_window_size,:] = scaler.transform(train_data[di+smooth_window_size:,:])
+train_data[di+smooth_window_size:,:] = scaler.transform(train_data[di+smooth_window_size:,:])
 
-#Reshape train and test data
+#Reshape train and test data to the shape of data size
 train_data = train_data.reshape(-1)
 test_data = scaler.transform(test_data).reshape(-1)
 
@@ -90,7 +90,7 @@ test_data = scaler.transform(test_data).reshape(-1)
 EMA = 0
 gamma = 0.1
 
-for t in range (11000):
+for t in range (1200):
     EMA = gamma*train_data[t] + (1 - gamma)*EMA
     train_data[t] = EMA 
     
@@ -118,12 +118,14 @@ for pred_ix in range(window_size,N):
 print('MSE error for standard AVG: %.5f'%(0.5*np.mean(mse_errors)))
 
 plt.figure(figsize = (18,9))
-plt.plot(range(df.shape[0]), all_mid_data, color = 'orange', label = 'True')
-plt.plot(range(window_size,N), std_avg_predictions, color = 'b', label = "Prediction")
+plt.plot(range(df.shape[0]), all_mid_data, color = 'b', label = 'True')
+plt.plot(range(window_size,N), std_avg_predictions, color = 'r', label = "Prediction")
 plt.xlabel('Date')
 plt.ylabel('Mid Price')
 plt.legend(fontsize = 18)
 plt.show()
+
+
 
 
 
