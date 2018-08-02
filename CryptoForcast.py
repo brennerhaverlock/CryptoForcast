@@ -188,7 +188,7 @@ class DataGenSeq(object):
     def unroll_batches(self):
         
         unroll_data,unroll_labels = [],[]
-        init_data,init_label = None,None
+       # init_data,init_label = None,None
         for ui in range(self._num_unroll):
             
             data, labels = self.next_batch()
@@ -254,8 +254,211 @@ for ix in range(n_layers):
     initial_state.append(tf.contrib.rnn.LSTMStateTuple(c_state[ix], h_state[ix]))
     
     
-            
+#tesnsor transformations-- function dynamic_runn requires output to be specific format
+
+all_inputs = tf.concat([tf.expand_dims(t,0) for t in train_inputs], axis = 0 )
+
+#make all outputs [seq_length, batch_size, num_nodes]
+
+all_lstm_outputs, state = tf.nn.dynamic_rnn(
+        drop_multi_cell, all_inputs, initial_state = tuple(initial_state),
+        time_major = True, dtype = tf.float32)
+
+#reshape outputs
+
+all_lstm_outputs = tf.reshape(all_lstm_outputs, [batch_size*num_unrolling, num_node[-1]])
+all_outputs = tf.nn.xw_plus_b(all_lstm_outputs,r_0,r_1)
+split_outputs = tf.split(all_outputs, num_unrolling, axis = 0)
+
+#calculate loss
+
+print('Defining training loss')
+loss = 0.0
+with tf.control_dependencies([tf.assign(c_state[xi], state[xi][0]) for xi in range(n_layers)]+
+                              [tf.assign(h_state[xi], state[xi][1]) for xi in range(n_layers)]):
+    for ui in range(num_unrolling):
+        loss += tf.reduce_mean(0.5*(split_outputs[ui] - train_outputs[ui]) ** 2)
         
+print('Learning Rate decay op')
+global_step = tf.Variable(0, trainable = False)
+inc_glstep = tf.assign(global_step, global_step + 1)
+tf_learning_rate = tf.placeholder(shape = None, dtype = tf.float32)
+tf_min_learning_rate = tf.placeholder(shape = None, dtype = tf.float32)
+
+learning_rate = tf.maximum(
+        tf.train.exponential_decay(tf_learning_rate,global_step, decay_steps=1,
+                                   decay_rate= 0.5,
+                                   staircase= True), tf_min_learning_rate)
+print('TF Optimization Op')
+optimizer = tf.train.AdamOptimizer(learning_rate)
+gradients, v = zip(*optimizer.compute_gradients(loss))
+gradients, _ = tf.clip_by_global_norm(gradients, 5.0)
+optimizer = optimizer.apply_gradients(
+        zip(gradients, v))
+
+print('\tAll Done')
+
+#defining prediction tensorflow operations
+
+print('Defining related TF Functions')
+
+sample_inputs = tf.placeholder(tf.float32, shape = [1, D])
+
+#Maintain LSTM state for prediction 
+
+sample_c, sample_h, initial_sample_state = [],[],[]
+
+for xi in range(n_layers):
+    sample_c.append(tf.Variable(tf.zeros([1, num_node[xi]]), trainable = False))
+    sample_h.append(tf.Variable(tf.zeros([1, num_node[xi]]), trainable = False))
+    initial_sample_state.append(tf.contrib.rnn.LSTMStateTuple(sample_c[xi], sample_h[xi]))
+    
+sample_state_reset = tf.group(*[tf.assign(sample_c[xi], tf.zeros([1, num_node[xi]])) for xi in range(n_layers)],
+                              *[tf.assign(sample_h[xi], tf.zeros([1, num_node[xi]])) for xi in range(n_layers)])
+
+sample_outputs, sample_state = tf.nn.dynamic_rnn(multi_cell, tf.expand_dims(sample_inputs, 0),
+                                                 initial_state = tuple(initial_sample_state),
+                                                 time_major = True,
+                                                 dtype = tf.float32)
+
+with tf.control_dependencies([tf.assign(sample_c[xi],sample_state[xi][0]) for xi in range (n_layers)]+
+                             [tf.assign(sample_h[xi], sample_state[xi][1]) for xi in range (n_layers)]):
+    sample_prediction = tf.nn.xw_plus_b(tf.reshape(sample_outputs,[1,-1]), r_0, r_1)
+print('\tAll Done')
+
+#Fun part of train and predict movements for several learning steps and see good/bad
+
+epochs = 35 #learning  steps
+valid_summary = 1 #interval for test predictions
+ 
+n_predict_once = 50 #steps continously predicting for
+train_seq_value = train_data.size # Full length/value of training data
+
+train_mse_ot = [] #array of train losses
+test_mse_ot = [] # array of test losses
+predictions_over_time = [] # array of predictions
+
+session = tf.InteractiveSession()
+
+tf.global_variables_initializer().run()
+
+#for decaying learning rate
+loss_nondecrease_count = 0 
+loss_nondecrease_threshold = 2 #if no increase in this many steps decrease learning rate
+
+print('Init LSTM')
+average_loss = 0 
+
+#define data gen 
+data_gen = DataGenSeq(train_data, batch_size, num_unrolling)
+
+x_axis_seq = []
+
+#points to start test predictions from
+seq_test_points = np.arange(1200, 1500, 50).tolist()
+
+for ep in range(epochs):
+    # ==========================Training==========================
+    
+    for step in range(train_seq_value//batch_size):
+        
+        u_data, u_labels = data_gen.unroll_batches()
+        
+        dict_entry = {}
+        for ui,(dat,lbl) in enumerate(zip(u_data, u_labels)):
+            dict_entry[train_inputs[ui]] = dat.reshape(-1,1)
+            dict_entry[train_outputs[ui]] = lbl.reshape(-1,1)
+            
+        dict_entry.update({tf_learning_rate: 0.0001, tf_min_learning_rate: 0.000001})
+        
+        _, 1 = session.run([optimizer, loss], dict_entry=dict_entry)
+        
+        average_loss += 1
+        
+#===============================VALIDATION========================================
+        
+    if (ep + 1) % valid_summary == 0:
+        
+        average_loss = average_loss/(valid_summary*(train_seq_value//batch_size))
+        
+        if (ep+1)%valid_summary == 0:
+            print('Average loss at step %d: %f' % (ep + 1, average_loss))
+            
+        train_mse_ot.append(average_loss)
+        
+        average_loss = 0 #reset
+        
+        seq_predictions = []
+        
+        test_mse_loss_seq = []
+        
+        #====================== Updating State and Making Predictions ===========================
+        
+        for w_ix in test_points_seq:
+            mse_test_loss = 0.0
+            predictions = []
+            
+            if (ep + 1)-valid_summary==0:
+                #calculate x_axis values in first valid epoch
+                x_axis = []
+                
+            #Feed past values of stock prices to make predictions from there
+            for re_i in range(w_ix-num_unrolling+1,w_ix-1):
+                now_price = all_mid_data[re_i]
+                dict_entry[sample_inputs] = np.array(now_price).reshape(1,1)
+                _ = session.run(sample_prediction, dict_entry = dict_entry)
+                
+            dict_entry = {}
+            
+            now_price = all_mid_data[w_ix]
+            
+            dict_entry[sample_inputs] = np.array(now_price).reshape(1,1)
+            
+            #Making predictions for x steps each one uses previous as it's input
+            
+            for pred_ix in range(n_predict_once):
+                
+                pred = session.run(sample_prediction, dict_entry=dict_entry)
+                
+                predictions.append(np.asscalar(pred))
+                
+                dict_entry[sample_inputs] = np.asarray(pred).reshape(-1,1)
+                
+                if (ep+1) - valid_summary == 0:
+                    #only calculate x_axis values in first epoch validation
+                    x_axis.append(w_ix+pred_ix)
+                
+                mse_test_loss += 0.5*(pred-all_mid_data[w_ix+pred_ix])**2
+            
+            session.run(reset_sample_states)
+            
+            seq_predictions.append(np.array(predictions))
+            
+            mse_test_loss /= n_predict_once
+            test_mse_loss_seq.append(mse_test_loss)
+            
+            if (ep + 1) - valid_summary == 0:
+                x_axis_seq.append(x_axis)
+                
+        current_mse_test = np.mean(test_mse_loss_seq)
+        
+        #logic for learning rate decay 
+        
+        if len(test_mse_ot) > 0 and current_mse_test > min(test_mse_ot):
+            loss_nondecrease_count += 1
+        else:
+            loss_nondecrease_count = 0
+            
+        if loss_nondecrease_count > loss_nondecrease_threshold :
+            session.run(inc_gstep)
+            loss_nondecrease_count = 0
+            print('\t Decreasing learning rate by 0.5')
+            
+        test_mse_ot.append(current_mse_test)
+        print('\tTest MSE %.5f'% np.mean(test_mse_loss_seq))
+        predictions_over_time.append(seq_predictions)
+        print('\t Finished Prediction')
+
 
 
 
