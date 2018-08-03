@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import datetime as dt
 import urllib.request, json
-#import config
+import config
 import os
 import numpy as np
 import tensorflow as tf # This code has been tested with TensorFlow 1.6
@@ -20,7 +20,7 @@ data_source = 'alphavantage'
 # For future data IF statement for API 
 if data_source == 'alphavantage':
     
-    api_key = 'TD0RVG4ZM2GXHTMA'
+    api_key = config.api_key
     
     symbol = 'BTC'
     market = 'USD'
@@ -460,7 +460,9 @@ for ep in range(epochs):
         print('\t Finished Prediction')
 
 #Visualize the Predictions 
+<<<<<<< HEAD
 best_predict_epoch = 1
+=======
 
 plt.figure(figsize = (18,18))
 plt.subplot(2,1,1)
