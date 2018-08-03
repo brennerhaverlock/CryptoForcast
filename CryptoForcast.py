@@ -460,7 +460,7 @@ for ep in range(epochs):
         print('\t Finished Prediction')
 
 #Visualize the Predictions 
-best_predict_epoch = 18
+best_predict_epoch = 1
 
 plt.figure(figsize = (18,18))
 plt.subplot(2,1,1)
@@ -476,7 +476,7 @@ for p_ix,p in enumerate(predictions_over_time[::3]):
 plt.title('Evolution of Test Predictions over Time',fontsize = 18)
 plt.xlabel('Date', fontsize = 18)
 plt.ylabel('Mid Price', fontsize = 18)
-plt.xlim(1200,1600)
+plt.xlim(1400,1500)
 
 plt.subplot(2,1,2)
 
