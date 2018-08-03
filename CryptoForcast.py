@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import datetime as dt
 import urllib.request, json
-#import config
+import config
 import os
 import numpy as np
 import tensorflow as tf # This code has been tested with TensorFlow 1.6
@@ -20,7 +20,7 @@ data_source = 'alphavantage'
 # For future data IF statement for API 
 if data_source == 'alphavantage':
     
-    api_key = 'TD0RVG4ZM2GXHTMA'
+    api_key = config.api_key
     
     symbol = 'BTC'
     market = 'USD'
@@ -51,7 +51,8 @@ if data_source == 'alphavantage':
 #df = panda dataframe for local use
 df = pd.read_csv('currency_daily_BTC-BTC.csv')        
 df = df.sort_values('Date')
-#Plot
+
+#Plot mid prices
 plt.figure(figsize = (18, 9))
 plt.plot(range(df.shape[0]), (df['Low']+ df['High'] /2.0))
 #plt.plot(range(df.shape[]))
@@ -59,6 +60,7 @@ plt.xticks(range(0, df.shape[0], 500), df['Date'].loc[::500], rotation = 45)
 plt.xlabel('Date', fontsize = 18)
 plt.ylabel('Mid Price', fontsize = 18)
 plt.show()
+
 #Setting high/low and mid prices for data
 high_prices = df.loc[:,'High'].as_matrix()
 low_prices = df.loc[:,'Low'].as_matrix()
@@ -460,7 +462,7 @@ for ep in range(epochs):
         print('\t Finished Prediction')
 
 #Visualize the Predictions 
-best_predict_epoch = 18
+best_predict_epoch = 12
 
 plt.figure(figsize = (18,18))
 plt.subplot(2,1,1)
