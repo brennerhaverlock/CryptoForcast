@@ -7,8 +7,7 @@ This is designed to forcast cryptocurrency prices using neural network of type L
 $ git clone https://github.com/officialbrenner/CryptoForcast
 
 ### 1. Install required packages
-
-install tensorflow from conda or env of your choice. for this I use Spyder as my IDE and conda to handle my packages
+I use Anaconda to handle my packages
 ```
 $ conda install -c conda-forge tensorflow 
 $ conda install -c anaconda numpy 
