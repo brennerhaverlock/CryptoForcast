@@ -212,7 +212,7 @@ for ui,(dat,lbl) in enumerate(zip(u_data,u_labels)):
     
 D = 1 #Dimensionality of the data this is 1d data
 num_unrolling = 50 #Number of steps into future 
-batch_size = 500 #number of samples in batch
+batch_size = 100 #number of samples in batch
 num_node = [200,200,150] #Number of hidden nodes in each layer of the deep LSTM stack we're using
 n_layers = len(num_node)
 dropout = 0.2 
@@ -275,11 +275,11 @@ split_outputs = tf.split(all_outputs, num_unrolling, axis = 0)
 print('Defining training loss')
 loss = 0.0
 with tf.control_dependencies([tf.assign(c_state[xi], state[xi][0]) for xi in range(n_layers)]+
-                              [tf.assign(h_state[xi], state[xi][1]) for xi in range(n_layers)]):
+                             [tf.assign(h_state[xi], state[xi][1]) for xi in range(n_layers)]):
     for ui in range(num_unrolling):
         loss += tf.reduce_mean(0.5*(split_outputs[ui] - train_outputs[ui]) ** 2)
         
-print('Learning Rate decay op')
+print('Learning Rate decay operations')
 global_step = tf.Variable(0, trainable = False)
 inc_glstep = tf.assign(global_step, global_step + 1)
 tf_learning_rate = tf.placeholder(shape = None, dtype = tf.float32)
@@ -364,14 +364,13 @@ for ep in range(epochs):
         
         u_data, u_labels = data_gen.unroll_batches()
         
-        dict_entry = {}
+        feed_dict = {}
         for ui,(dat,lbl) in enumerate(zip(u_data, u_labels)):
-            dict_entry[train_inputs[ui]] = dat.reshape(-1,1)
-            dict_entry[train_outputs[ui]] = lbl.reshape(-1,1)
+            feed_dict[train_inputs[ui]] = dat.reshape(-1,1)
+            feed_dict[train_outputs[ui]] = lbl.reshape(-1,1)
             
-        dict_entry.update({tf_learning_rate: 0.0001, tf_min_learning_rate: 0.000001})
-        
-        _, 1 = session.run([optimizer, loss], dict_entry=dict_entry)
+        feed_dict.update({tf_learning_rate: 0.0001, tf_min_learning_rate: 0.00001})
+        _, 1 = session.run(([optimizer, loss]), feed_dict=feed_dict)
         
         average_loss += 1
         
@@ -450,7 +449,7 @@ for ep in range(epochs):
             loss_nondecrease_count = 0
             
         if loss_nondecrease_count > loss_nondecrease_threshold :
-            session.run(inc_gstep)
+            session.run(inc_glstep)
             loss_nondecrease_count = 0
             print('\t Decreasing learning rate by 0.5')
             
