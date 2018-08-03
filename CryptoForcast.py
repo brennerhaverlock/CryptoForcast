@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import datetime as dt
 import urllib.request, json
-import config
+#import config
 import os
 import numpy as np
 import tensorflow as tf # This code has been tested with TensorFlow 1.6
@@ -20,7 +20,7 @@ data_source = 'alphavantage'
 # For future data IF statement for API 
 if data_source == 'alphavantage':
     
-    api_key = config.api_key
+    api_key = 'TD0RVG4ZM2GXHTMA'
     
     symbol = 'BTC'
     market = 'USD'
@@ -72,7 +72,7 @@ scaler = MinMaxScaler()
 train_data = train_data.reshape(-1,1)
 test_data = test_data.reshape(-1,1)
 
-#Train the sclaer with training data and smooth data
+#Train the scaler with training data and smooth data
 smooth_window_size = 300
 for di in range(0, 1200, smooth_window_size):
     scaler.fit(train_data[di:di+smooth_window_size,:])
@@ -98,7 +98,7 @@ for t in range (1200):
 all_mid_data = np.concatenate([train_data,test_data], axis = 0)
 
 #Using MSE (Mean Squared Error)
-
+#Standard Average
 window_size = 100
 N = train_data.size
 std_avg_predictions = []
@@ -126,7 +126,7 @@ plt.legend(fontsize = 18)
 plt.show()
 
 #Exponential Moving Average 
-
+#allows preserved older values 
 window_size = 100 
 
 N = train_data.size
@@ -212,10 +212,10 @@ for ui,(dat,lbl) in enumerate(zip(u_data,u_labels)):
     
 D = 1 #Dimensionality of the data this is 1d data
 num_unrolling = 50 #Number of steps into future 
-batch_size = 100 #number of samples in batch
-num_node = [200,200,150] #Number of hidden nodes in each layer of the deep LSTM stack we're using
+batch_size = 50 #number of samples in batch
+num_node = [200,250,200] #Number of hidden nodes in each layer of the deep LSTM stack we're using
 n_layers = len(num_node)
-dropout = 0.2 
+dropout = 0.12
 
 tf.reset_default_graph()
 
@@ -305,7 +305,7 @@ print('Defining related TF Functions')
 sample_inputs = tf.placeholder(tf.float32, shape = [1, D])
 
 #Maintain LSTM state for prediction 
-
+#cell state-hiddenstate
 sample_c, sample_h, initial_sample_state = [],[],[]
 
 for xi in range(n_layers):
@@ -328,7 +328,7 @@ print('\tAll Done')
 
 #Fun part of train and predict movements for several learning steps and see good/bad
 
-epochs = 35 #learning  steps
+epochs = 20 #learning  steps
 valid_summary = 1 #interval for test predictions
  
 n_predict_once = 50 #steps continously predicting for
@@ -355,7 +355,7 @@ data_gen = DataGenSeq(train_data, batch_size, num_unrolling)
 x_axis_seq = []
 
 #points to start test predictions from
-seq_test_points = np.arange(1200, 1500, 50).tolist()
+seq_test_points = np.arange(1000, 1500, 50).tolist()
 
 for ep in range(epochs):
     # ==========================Training==========================
@@ -370,7 +370,8 @@ for ep in range(epochs):
             feed_dict[train_outputs[ui]] = lbl.reshape(-1,1)
             
         feed_dict.update({tf_learning_rate: 0.0001, tf_min_learning_rate: 0.00001})
-        _, 1 = session.run(([optimizer, loss]), feed_dict=feed_dict)
+        one = 1
+        _, one = session.run(([optimizer, loss]), feed_dict=feed_dict)
         
         average_loss += 1
         
@@ -393,7 +394,7 @@ for ep in range(epochs):
         
         #====================== Updating State and Making Predictions ===========================
         
-        for w_ix in test_points_seq:
+        for w_ix in seq_test_points:
             mse_test_loss = 0.0
             predictions = []
             
@@ -404,24 +405,24 @@ for ep in range(epochs):
             #Feed past values of stock prices to make predictions from there
             for re_i in range(w_ix-num_unrolling+1,w_ix-1):
                 now_price = all_mid_data[re_i]
-                dict_entry[sample_inputs] = np.array(now_price).reshape(1,1)
-                _ = session.run(sample_prediction, dict_entry = dict_entry)
+                feed_dict[sample_inputs] = np.array(now_price).reshape(1,1)
+                _ = session.run(sample_prediction, feed_dict = feed_dict)
                 
-            dict_entry = {}
+            feed_dict = {}
             
             now_price = all_mid_data[w_ix]
             
-            dict_entry[sample_inputs] = np.array(now_price).reshape(1,1)
+            feed_dict[sample_inputs] = np.array(now_price).reshape(1,1)
             
             #Making predictions for x steps each one uses previous as it's input
             
             for pred_ix in range(n_predict_once):
                 
-                pred = session.run(sample_prediction, dict_entry=dict_entry)
+                pred = session.run(sample_prediction, feed_dict=feed_dict)
                 
                 predictions.append(np.asscalar(pred))
                 
-                dict_entry[sample_inputs] = np.asarray(pred).reshape(-1,1)
+                feed_dict[sample_inputs] = np.asarray(pred).reshape(-1,1)
                 
                 if (ep+1) - valid_summary == 0:
                     #only calculate x_axis values in first epoch validation
@@ -429,7 +430,7 @@ for ep in range(epochs):
                 
                 mse_test_loss += 0.5*(pred-all_mid_data[w_ix+pred_ix])**2
             
-            session.run(reset_sample_states)
+            session.run(sample_state_reset)
             
             seq_predictions.append(np.array(predictions))
             
@@ -458,8 +459,40 @@ for ep in range(epochs):
         predictions_over_time.append(seq_predictions)
         print('\t Finished Prediction')
 
+#Visualize the Predictions 
+best_predict_epoch = 18
 
+plt.figure(figsize = (18,18))
+plt.subplot(2,1,1)
+plt.plot(range(df.shape[0]), all_mid_data,color='b')
 
+#plot predictions over time
+#plot older predictions with low alpha and newer ones with high alpha
+start_alpha = 0.25
+alpha = np.arange(start_alpha,1.1,(1.0-start_alpha)/len(predictions_over_time[::3]))
+for p_ix,p in enumerate(predictions_over_time[::3]):
+    for xval,yval in zip(x_axis_seq,p):
+        plt.plot(xval,yval,color='r', alpha = alpha[p_ix])
+plt.title('Evolution of Test Predictions over Time',fontsize = 18)
+plt.xlabel('Date', fontsize = 18)
+plt.ylabel('Mid Price', fontsize = 18)
+plt.xlim(1200,1600)
+
+plt.subplot(2,1,2)
+
+#predicting the best test prediction 
+plt.plot(range(df.shape[0]),all_mid_data,color = 'b')
+for xval,yval in zip(x_axis_seq, predictions_over_time[best_predict_epoch]):
+    plt.plot(xval,yval,color = 'r')
+
+plt.title('Best Test Predictions over time', fontsize = 18)
+plt.xlabel('Date',fontsize = 18)
+plt.ylabel('Mid Price', fontsize = 18)
+plt.xlim(500,1600)
+plt.show
+    
+        
+        
 
 
 
