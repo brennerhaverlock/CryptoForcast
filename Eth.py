@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Mon Aug 13 15:43:44 2018
+
+@author: Brenner
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Jul 30 11:25:45 2018
 
 @author: Brenner
@@ -22,7 +29,7 @@ if data_source == 'alphavantage':
     
     api_key = config.api_key
     
-    symbol = 'BTC'
+    symbol = 'ETH'
     market = 'USD'
     
     url_string = "https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=%s&market=USD&apikey=%s"%(symbol,api_key)
@@ -49,14 +56,14 @@ if data_source == 'alphavantage':
         print('File already exists. Loading data from CSV')
         df = pd.read_csv(file_to_save)
 #df = panda dataframe for local use
-df = pd.read_csv('currency_daily_BTC-BTC.csv')        
+df = pd.read_csv('currency_daily_BTC-ETH.csv')        
 df = df.sort_values('Date')
 
 #Plot mid prices
 plt.figure(figsize = (18, 9))
 plt.plot(range(df.shape[0]), (df['Low']+ df['High'] /2.0))
 #plt.plot(range(df.shape[]))
-plt.xticks(range(0, df.shape[0], 500), df['Date'].loc[::500], rotation = 45)
+plt.xticks(range(0, df.shape[0], 200), df['Date'].loc[::200], rotation = 45)
 plt.xlabel('Date', fontsize = 18)
 plt.ylabel('Mid Price', fontsize = 18)
 plt.show()
@@ -75,8 +82,9 @@ train_data = train_data.reshape(-1,1)
 test_data = test_data.reshape(-1,1)
 
 #Train the scaler with training data and smooth data
-smooth_window_size = 300
-for di in range(0, 1200, smooth_window_size):
+smooth_window_size = 200
+
+for di in range(0, 800, smooth_window_size):
     scaler.fit(train_data[di:di+smooth_window_size,:])
     train_data[di:di+smooth_window_size,:] = scaler.transform(train_data[di:di+smooth_window_size,:])
     
@@ -92,7 +100,7 @@ test_data = scaler.transform(test_data).reshape(-1)
 EMA = 0
 gamma = 0.1
 
-for t in range (1200):
+for t in range (800):
     EMA = gamma*train_data[t] + (1 - gamma)*EMA
     train_data[t] = EMA 
     
@@ -101,7 +109,7 @@ all_mid_data = np.concatenate([train_data,test_data], axis = 0)
 
 #Using MSE (Mean Squared Error)
 #Standard Average
-window_size = 100
+window_size = 200
 N = train_data.size
 std_avg_predictions = []
 std_avg_x = []
