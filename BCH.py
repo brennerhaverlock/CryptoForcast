@@ -76,9 +76,9 @@ train_data = train_data.reshape(-1,1)
 test_data = test_data.reshape(-1,1)
 
 #Train the scaler with training data and smooth data
-smooth_window_size = 300
+smooth_window_size = 100
 
-for di in range(0, 900, smooth_window_size):
+for di in range(0, 300, smooth_window_size):
     scaler.fit(train_data[di:di+smooth_window_size,:])
     train_data[di:di+smooth_window_size,:] = scaler.transform(train_data[di:di+smooth_window_size,:])
     
@@ -94,7 +94,7 @@ test_data = scaler.transform(test_data).reshape(-1)
 EMA = 0
 gamma = 0.1
 
-for t in range (900):
+for t in range (300):
     EMA = gamma*train_data[t] + (1 - gamma)*EMA
     train_data[t] = EMA 
     
@@ -103,7 +103,7 @@ all_mid_data = np.concatenate([train_data,test_data], axis = 0)
 
 #Using MSE (Mean Squared Error)
 #Standard Average
-window_size = 300
+window_size = 100
 N = train_data.size
 std_avg_predictions = []
 std_avg_x = []
@@ -358,7 +358,7 @@ data_gen = DataGenSeq(train_data, batch_size, num_unrolling)
 x_axis_seq = []
 
 #points to start test predictions from
-seq_test_points = np.arange(200, 1000, 20).tolist()
+seq_test_points = np.arange(0, 350, 20).tolist()
 
 for ep in range(epochs):
     # ==========================Training==========================
@@ -464,7 +464,7 @@ for ep in range(epochs):
 
 #Visualize the Predictions 
 
-best_predict_epoch = 12
+best_predict_epoch = 14
 
 plt.figure(figsize = (18,18))
 plt.subplot(2,1,1)
@@ -480,7 +480,7 @@ for p_ix,p in enumerate(predictions_over_time[::3]):
 plt.title('Evolution of Test Predictions over Time',fontsize = 18)
 plt.xlabel('Date', fontsize = 18)
 plt.ylabel('Mid Price', fontsize = 18)
-plt.xlim(1000,1500)
+plt.xlim(0,400)
 
 plt.subplot(2,1,2)
 
@@ -492,7 +492,7 @@ for xval,yval in zip(x_axis_seq, predictions_over_time[best_predict_epoch]):
 plt.title('Best Test Predictions over time', fontsize = 18)
 plt.xlabel('Date',fontsize = 18)
 plt.ylabel('Mid Price', fontsize = 18)
-plt.xlim(500,1600)
+plt.xlim(0,500)
 plt.show
     
         
