@@ -5,13 +5,6 @@ Created on Mon Aug 13 15:43:44 2018
 @author: Brenner
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jul 30 11:25:45 2018
-
-@author: Brenner
-"""
-
 #from pandas_datareader import data
 import matplotlib.pyplot as plt
 import pandas as pd
