@@ -4,7 +4,7 @@ This is designed to forcast cryptocurrency prices using neural network of type L
 
 ## Usage
 
-$ git clone https://github.com/officialbrenner/CryptoForcast
+```$ git clone https://github.com/officialbrenner/CryptoForcast```
 
 ### 1. Install required packages
 I use Anaconda to handle my packages
