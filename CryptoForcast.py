@@ -51,7 +51,8 @@ if data_source == 'alphavantage':
 #df = panda dataframe for local use
 df = pd.read_csv('currency_daily_BTC-BTC.csv')        
 df = df.sort_values('Date')
-#Plot
+
+#Plot mid prices
 plt.figure(figsize = (18, 9))
 plt.plot(range(df.shape[0]), (df['Low']+ df['High'] /2.0))
 #plt.plot(range(df.shape[]))
@@ -59,6 +60,7 @@ plt.xticks(range(0, df.shape[0], 500), df['Date'].loc[::500], rotation = 45)
 plt.xlabel('Date', fontsize = 18)
 plt.ylabel('Mid Price', fontsize = 18)
 plt.show()
+
 #Setting high/low and mid prices for data
 high_prices = df.loc[:,'High'].as_matrix()
 low_prices = df.loc[:,'Low'].as_matrix()
@@ -211,11 +213,11 @@ for ui,(dat,lbl) in enumerate(zip(u_data,u_labels)):
     print('\tInputs: ', dat )
     
 D = 1 #Dimensionality of the data this is 1d data
-num_unrolling = 50 #Number of steps into future 
+num_unrolling = 40 #Number of steps into future 
 batch_size = 50 #number of samples in batch
-num_node = [200,250,200] #Number of hidden nodes in each layer of the deep LSTM stack we're using
+num_node = [250,200,300] #Number of hidden nodes in each layer of the deep LSTM stack we're using
 n_layers = len(num_node)
-dropout = 0.12
+dropout = 0.15
 
 tf.reset_default_graph()
 
@@ -331,7 +333,7 @@ print('\tAll Done')
 epochs = 20 #learning  steps
 valid_summary = 1 #interval for test predictions
  
-n_predict_once = 50 #steps continously predicting for
+n_predict_once = 30 #steps continously predicting for
 train_seq_value = train_data.size # Full length/value of training data
 
 train_mse_ot = [] #array of train losses
@@ -355,7 +357,7 @@ data_gen = DataGenSeq(train_data, batch_size, num_unrolling)
 x_axis_seq = []
 
 #points to start test predictions from
-seq_test_points = np.arange(1000, 1500, 50).tolist()
+seq_test_points = np.arange(1100, 1500, 20).tolist()
 
 for ep in range(epochs):
     # ==========================Training==========================
@@ -460,9 +462,8 @@ for ep in range(epochs):
         print('\t Finished Prediction')
 
 #Visualize the Predictions 
-<<<<<<< HEAD
-best_predict_epoch = 1
-=======
+
+best_predict_epoch = 12
 
 plt.figure(figsize = (18,18))
 plt.subplot(2,1,1)
@@ -478,7 +479,7 @@ for p_ix,p in enumerate(predictions_over_time[::3]):
 plt.title('Evolution of Test Predictions over Time',fontsize = 18)
 plt.xlabel('Date', fontsize = 18)
 plt.ylabel('Mid Price', fontsize = 18)
-plt.xlim(1400,1500)
+plt.xlim(1000,1500)
 
 plt.subplot(2,1,2)
 
