@@ -74,7 +74,7 @@ low_prices = df.loc[:,'Low'].as_matrix()
 mid_prices = (high_prices+low_prices)/2.0
 #split 
 from sklearn.model_selection import train_test_split
-train_data, test_data = train_test_split(mid_prices, test_size=0.2)
+train_data, test_data = train_test_split(mid_prices, test_size=0.15)
 
 ##Now we Scale the data to be between 0 and 1 
 scaler = MinMaxScaler()
@@ -82,9 +82,9 @@ train_data = train_data.reshape(-1,1)
 test_data = test_data.reshape(-1,1)
 
 #Train the scaler with training data and smooth data
-smooth_window_size = 200
+smooth_window_size = 300
 
-for di in range(0, 800, smooth_window_size):
+for di in range(0, 900, smooth_window_size):
     scaler.fit(train_data[di:di+smooth_window_size,:])
     train_data[di:di+smooth_window_size,:] = scaler.transform(train_data[di:di+smooth_window_size,:])
     
@@ -100,7 +100,7 @@ test_data = scaler.transform(test_data).reshape(-1)
 EMA = 0
 gamma = 0.1
 
-for t in range (800):
+for t in range (900):
     EMA = gamma*train_data[t] + (1 - gamma)*EMA
     train_data[t] = EMA 
     
@@ -109,7 +109,7 @@ all_mid_data = np.concatenate([train_data,test_data], axis = 0)
 
 #Using MSE (Mean Squared Error)
 #Standard Average
-window_size = 200
+window_size = 300
 N = train_data.size
 std_avg_predictions = []
 std_avg_x = []
@@ -311,7 +311,6 @@ print('\tAll Done')
 #defining prediction tensorflow operations
 
 print('Defining related TF Functions')
-
 sample_inputs = tf.placeholder(tf.float32, shape = [1, D])
 
 #Maintain LSTM state for prediction 
@@ -365,7 +364,7 @@ data_gen = DataGenSeq(train_data, batch_size, num_unrolling)
 x_axis_seq = []
 
 #points to start test predictions from
-seq_test_points = np.arange(1100, 1500, 20).tolist()
+seq_test_points = np.arange(200, 1000, 20).tolist()
 
 for ep in range(epochs):
     # ==========================Training==========================
