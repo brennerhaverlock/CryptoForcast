@@ -1,6 +1,11 @@
 # CryptoForcast
 
-This is designed to forcast cryptocurrency prices using neural network of type LSTM(RNN network) with tensorflow 
+![alt text](https://imgur.com/a/JjJlSXn)
+
+
+This is designed to forcast cryptocurrency prices using neural network of type LSTM(RNN network) with tensorflow. Currently I'd only "trust" the original Cryptoforcast.py as it's for Bitcoin and it's the best looking prediction at the moment. 
+
+
 
 ## Usage
 
@@ -27,3 +32,4 @@ $ api_key = 'YOUR_API_KEY'
 
 ### 3. Run. 
 Please note predictions are still being worked on and the project is still young
+
