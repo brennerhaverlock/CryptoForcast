@@ -31,5 +31,4 @@ Get your API key and create a new file called config and create a variable named
 $ api_key = 'YOUR_API_KEY'
 
 ### 3. Run. 
-Please note predictions are still being worked on and the project is still young
-
+Run program using your IDE(I recommend Spyder). Check out this post(https://medium.com/@brenner.haverlock/variables-that-matter-for-rnn-lstm-networks-329d422c58a9) for help. 
