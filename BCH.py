@@ -77,7 +77,7 @@ test_data = test_data.reshape(-1,1)
 #Train the scaler with training data and smooth data
 smooth_window_size = 100
 
-for di in range(0, 300, smooth_window_size):
+-for di in range(0, 300, smooth_window_size):
     scaler.fit(train_data[di:di+smooth_window_size,:])
     train_data[di:di+smooth_window_size,:] = scaler.transform(train_data[di:di+smooth_window_size,:])
     
